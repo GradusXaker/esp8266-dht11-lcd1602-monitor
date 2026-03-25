@@ -90,6 +90,10 @@ void ClockService::update() {
   }
 }
 
+void ClockService::setTelemetry(const DeviceTelemetry& telemetry) {
+  telemetry_ = telemetry;
+}
+
 bool ClockService::isConfigured() const {
   return config_.isWifiConfigured();
 }
@@ -258,34 +262,80 @@ void ClockService::setupOta() {
 
 void ClockService::handleRoot() {
   String html;
-  html.reserve(2200);
+  html.reserve(7000);
   html += "<!doctype html><html><head><meta charset='utf-8'>";
   html += "<meta name='viewport' content='width=device-width,initial-scale=1'>";
-  html += "<title>ESP8266 Setup</title>";
-  html += "<style>body{font-family:Verdana,sans-serif;max-width:760px;margin:24px auto;padding:0 16px;background:#f4f7fb;color:#142033;}";
-  html += "h1{margin-bottom:8px;}section,form{background:#fff;border:1px solid #d8e2ef;border-radius:12px;padding:16px;margin:16px 0;}";
-  html += "label{display:block;font-weight:700;margin:12px 0 6px;}input{width:100%;padding:10px;border:1px solid #c6d3e3;border-radius:8px;}button{margin-top:14px;padding:10px 14px;border:0;border-radius:8px;background:#1b6ef3;color:#fff;font-weight:700;}";
-  html += ".muted{color:#5e7188;font-size:14px;} .danger{background:#d9485f;} code{background:#eef3f8;padding:2px 6px;border-radius:6px;}</style></head><body>";
-  html += "<h1>ESP8266 weather setup</h1>";
-  html += "<p class='muted'>Use this page to configure Wi-Fi, UTC offset, OTA, and time sync.</p>";
-  html += "<section><strong>Mode:</strong> ";
+  html += "<title>ESP8266 погодная станция</title>";
+  html += "<style>";
+  html += ":root{--bg:#eef4ff;--bg2:#dceaff;--ink:#10213a;--muted:#5f6f88;--card:#ffffff;--line:#d4deee;--accent:#0f7bff;--accent2:#19b8a6;--danger:#da516b;--shadow:0 18px 50px rgba(16,33,58,.10);}*{box-sizing:border-box;}";
+  html += "body{margin:0;font-family:Verdana,sans-serif;color:var(--ink);background:radial-gradient(circle at top left,#ffffff 0, var(--bg) 42%, var(--bg2) 100%);}main{max-width:1080px;margin:0 auto;padding:28px 18px 56px;}";
+  html += ".hero{position:relative;overflow:hidden;background:linear-gradient(135deg,#0f1f3b,#0d6efd 58%,#1db7a7);color:#fff;border-radius:24px;padding:28px;box-shadow:var(--shadow);} .hero:before{content:'';position:absolute;inset:auto -80px -80px auto;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.10);}";
+  html += ".hero h1{margin:0 0 10px;font-size:clamp(28px,4vw,42px);line-height:1.05;} .hero p{margin:0;max-width:720px;color:rgba(255,255,255,.86);} .badges{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;} .badge{padding:8px 12px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(255,255,255,.10);backdrop-filter:blur(8px);font-size:13px;}";
+  html += ".grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:18px;} .card{grid-column:span 12;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:var(--shadow);} .card h2{margin:0 0 12px;font-size:18px;} .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;} .stat{padding:14px;border-radius:16px;background:linear-gradient(180deg,#f9fbff,#eef5ff);border:1px solid #dbe5f3;} .stat .label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);} .stat .value{display:block;margin-top:8px;font-size:22px;font-weight:700;}";
+  html += ".split{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;} .display{display:grid;grid-template-columns:1fr 1fr;gap:12px;} .lcd{padding:18px;border-radius:18px;background:linear-gradient(180deg,#20310f,#111c08);color:#b8ff8f;font-family:monospace;border:1px solid #2d4218;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);} .lcd .line{font-size:18px;line-height:1.55;white-space:pre;}";
+  html += "label{display:block;margin:12px 0 6px;font-size:13px;font-weight:700;color:#223554;} input{width:100%;padding:12px 13px;border-radius:12px;border:1px solid #cad7ea;background:#f8fbff;color:var(--ink);} .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;} button{padding:12px 16px;border:0;border-radius:12px;background:linear-gradient(135deg,var(--accent),#2d8cff);color:#fff;font-weight:700;cursor:pointer;} .danger{background:linear-gradient(135deg,var(--danger),#bf3659);} .muted{color:var(--muted);} code{background:#eef3f8;padding:3px 7px;border-radius:7px;} .tiny{font-size:12px;} @media (max-width:860px){.split{grid-template-columns:1fr;} .display{grid-template-columns:1fr;} main{padding:18px 14px 40px;}}";
+  html += "</style></head><body><main>";
+  html += "<section class='hero'><h1>ESP8266 погодная станция</h1>";
+  html += "<p>Живой статус устройства, настройка Wi-Fi, время по NTP, OTA и показания датчика в одной странице. Без bland-технической заглушки: сразу понятная и пригодная панель устройства.</p>";
+  html += "<div class='badges'>";
+  html += "<span class='badge'>Режим: <strong id='modeBadge'>";
   html += apMode_ ? "AP setup" : "Station";
-  html += "<br><strong>IP:</strong> ";
-  html += htmlEscape(getIpAddress());
-  html += "<br><strong>Hostname:</strong> ";
-  html += htmlEscape(hostname_);
-  html += "<br><strong>Status:</strong> ";
-  html += htmlEscape(getStatusLine());
-  html += "<br><strong>JSON:</strong> <code>/status</code></section>";
+  html += "</strong></span>";
+  html += "<span class='badge'>IP: <strong id='ipBadge'>" + htmlEscape(getIpAddress()) + "</strong></span>";
+  html += "<span class='badge'>OTA: <strong id='otaBadge'>" + String(otaEnabled_ ? "включено" : "ожидание") + "</strong></span>";
+  html += "<span class='badge'>JSON: <code>/status</code></span></div></section>";
+  html += "<div class='grid'>";
+  html += "<section class='card'><h2>Живой статус</h2><div class='stat-grid'>";
+  html += "<div class='stat'><span class='label'>Температура</span><span class='value' id='tempValue'>--.- C</span></div>";
+  html += "<div class='stat'><span class='label'>Влажность</span><span class='value' id='humValue'>-- %</span></div>";
+  html += "<div class='stat'><span class='label'>Wi-Fi</span><span class='value' id='wifiValue'>--</span></div>";
+  html += "<div class='stat'><span class='label'>Время</span><span class='value' id='timeValue'>--:--:--</span></div>";
+  html += "<div class='stat'><span class='label'>Свободная память</span><span class='value' id='heapValue'>--</span></div>";
+  html += "<div class='stat'><span class='label'>Uptime</span><span class='value' id='uptimeValue'>--</span></div>";
+  html += "</div></section>";
+  html += "<div class='split' style='grid-column:span 12'>";
+  html += "<section class='card'><h2>LCD и устройство</h2><div class='display'>";
+  html += "<div class='lcd'><div class='line' id='lcdLine1'>" + htmlEscape(getTimeLine()) + "</div><div class='line' id='lcdLine2'>" + htmlEscape(getStatusLine()) + "</div></div>";
+  html += "<div class='muted'><p><strong>Hostname:</strong> <span id='hostnameValue'>" + htmlEscape(hostname_) + "</span></p>";
+  html += "<p><strong>IP:</strong> <span id='ipValue'>" + htmlEscape(getIpAddress()) + "</span></p>";
+  html += "<p><strong>RSSI:</strong> <span id='rssiValue'>--</span></p>";
+  html += "<p><strong>LCD:</strong> <span id='lcdState'>--</span></p>";
+  html += "<p><strong>Датчик:</strong> <span id='sensorState'>--</span></p>";
+  html += "<p><strong>Chip ID:</strong> <span id='chipValue'>--</span></p></div></section>";
+  html += "<section class='card'><h2>Настройка сети</h2>";
+  html += "<p class='muted'>Сохраненные настройки имеют приоритет. Если конфигурации нет, устройство само поднимает <code>ESP8266-Setup</code>.</p>";
   html += "<form method='post' action='/save'>";
   html += "<label for='ssid'>Wi-Fi SSID</label><input id='ssid' name='ssid' value='" + htmlEscape(config_.ssid) + "'>";
-  html += "<label for='password'>Wi-Fi password</label><input id='password' name='password' type='password' value='" + htmlEscape(config_.password) + "'>";
-  html += "<label for='utcHours'>UTC offset hours</label><input id='utcHours' name='utcHours' type='number' min='-12' max='14' value='";
+  html += "<label for='password'>Пароль Wi-Fi</label><input id='password' name='password' type='password' value='" + htmlEscape(config_.password) + "'>";
+  html += "<label for='utcHours'>Смещение UTC (часы)</label><input id='utcHours' name='utcHours' type='number' min='-12' max='14' value='";
   html += String(config_.utcOffsetSeconds / 3600);
   html += "'>";
-  html += "<button type='submit'>Save and restart</button></form>";
-  html += "<form method='post' action='/reset'><button class='danger' type='submit'>Clear config and restart</button></form>";
-  html += "</body></html>";
+  html += "<div class='actions'><button type='submit'>Сохранить и перезапустить</button></div></form>";
+  html += "<form method='post' action='/reset'><div class='actions'><button class='danger' type='submit'>Очистить конфиг и перезапустить</button></div></form>";
+  html += "<p class='muted tiny'>После сохранения устройство автоматически перезапустится и попытается подключиться к заданной сети.</p></section></div>";
+  html += "</div>";
+  html += "<script>const fmtMs=(ms)=>{const s=Math.floor(ms/1000);const h=Math.floor(s/3600);const m=Math.floor((s%3600)/60);const sec=s%60;return `${h}h ${m}m ${sec}s`;};";
+  html += "const num=(v,d=0)=>typeof v==='number'&&!Number.isNaN(v)?v.toFixed(d):'--';";
+  html += "async function refresh(){try{const r=await fetch('/status',{cache:'no-store'});const s=await r.json();";
+  html += "document.getElementById('modeBadge').textContent=s.mode==='ap'?'AP setup':'Station';";
+  html += "document.getElementById('ipBadge').textContent=s.ip||'0.0.0.0';";
+  html += "document.getElementById('otaBadge').textContent=s.otaEnabled?'включено':'ожидание';";
+  html += "document.getElementById('tempValue').textContent=s.sensorOk?`${num(s.temperatureC,1)} C`:'нет данных';";
+  html += "document.getElementById('humValue').textContent=s.sensorOk?`${num(s.humidityPct,0)} %`:'нет данных';";
+  html += "document.getElementById('wifiValue').textContent=s.wifiConnected?'подключен':(s.wifiConfigured?'подключение...':'не настроен');";
+  html += "document.getElementById('timeValue').textContent=s.timeLine||'--:--:--';";
+  html += "document.getElementById('heapValue').textContent=s.freeHeap?`${s.freeHeap} B`:'--';";
+  html += "document.getElementById('uptimeValue').textContent=fmtMs(s.uptimeMs||0);";
+  html += "document.getElementById('lcdLine1').textContent=s.dateLine||s.timeLine||'--';";
+  html += "document.getElementById('lcdLine2').textContent=s.networkLine||s.statusLine||'--';";
+  html += "document.getElementById('hostnameValue').textContent=s.hostname||'--';";
+  html += "document.getElementById('ipValue').textContent=s.ip||'0.0.0.0';";
+  html += "document.getElementById('rssiValue').textContent=s.wifiConnected?`${s.rssi} dBm`:'--';";
+  html += "document.getElementById('lcdState').textContent=s.lcdOk?`ok (0x${Number(s.lcdAddress).toString(16)})`:'ошибка';";
+  html += "document.getElementById('sensorState').textContent=s.sensorOk?'ok':'ошибка';";
+  html += "document.getElementById('chipValue').textContent=s.chipId||'--';";
+  html += "}catch(e){console.warn(e);}}refresh();setInterval(refresh,3000);</script>";
+  html += "</main></body></html>";
   g_server.send(200, "text/html", html);
 }
 
@@ -313,6 +363,11 @@ void ClockService::handleStatus() {
   doc["timeSynced"] = timeValid_;
   doc["otaEnabled"] = otaEnabled_;
   doc["apMode"] = apMode_;
+  doc["lcdOk"] = telemetry_.lcdOk;
+  doc["lcdAddress"] = telemetry_.lcdAddress;
+  doc["sensorOk"] = telemetry_.sensorOk;
+  doc["temperatureC"] = telemetry_.temperatureC;
+  doc["humidityPct"] = telemetry_.humidityPct;
   doc["ip"] = getIpAddress();
   doc["hostname"] = hostname_;
   doc["ssid"] = config_.ssid;
@@ -325,7 +380,7 @@ void ClockService::handleStatus() {
   doc["statusLine"] = getStatusLine();
   doc["chipId"] = ESP.getChipId();
   doc["freeHeap"] = ESP.getFreeHeap();
-  doc["uptimeMs"] = millis();
+  doc["uptimeMs"] = telemetry_.uptimeMs;
   String json;
   serializeJson(doc, json);
   g_server.send(200, "application/json", json);

@@ -22,7 +22,19 @@ void AppController::begin() {
 void AppController::loop() {
   updateClock();
   updateSensor();
+  publishTelemetry();
   updateDisplay();
+}
+
+void AppController::publishTelemetry() {
+  DeviceTelemetry telemetry;
+  telemetry.lcdOk = state_.lcdOk;
+  telemetry.sensorOk = state_.sensorOk;
+  telemetry.lcdAddress = state_.lcdAddress;
+  telemetry.temperatureC = state_.temperatureC;
+  telemetry.humidityPct = state_.humidityPct;
+  telemetry.uptimeMs = millis();
+  clock_.setTelemetry(telemetry);
 }
 
 void AppController::updateClock() {
