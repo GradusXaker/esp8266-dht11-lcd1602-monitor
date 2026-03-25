@@ -11,6 +11,7 @@ class DisplayManager {
   void showBootScreen(uint8_t lcdAddress);
   void showSensorData(float temperatureC, float humidityPct);
   void showSensorError();
+  void showClockData(const String& timeLine, const String& statusLine);
 
  private:
   bool i2cDevicePresent(uint8_t address);

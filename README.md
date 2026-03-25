@@ -17,15 +17,28 @@ Simple firmware project for `NodeMCU 1.0 (ESP-12E Module)` with `LCD1602 I2C` an
 - Auto-detects LCD I2C address (`0x27`, `0x3F`, then full scan)
 - Reads `DHT11` every 2.5 seconds
 - Shows temperature and humidity on a 16x2 display
+- Supports optional `Wi-Fi + NTP` clock screen when credentials are configured
 - Prints diagnostics to `Serial` at `115200`
 - Keeps code structure ready for future `Wi-Fi`, `NTP`, and `OTA`
+
+## Optional Wi-Fi clock setup
+
+To enable the clock screen, edit `include/config.h` and set:
+
+```cpp
+constexpr char kWifiSsid[] = "YOUR_WIFI";
+constexpr char kWifiPassword[] = "YOUR_PASSWORD";
+constexpr long kUtcOffsetSeconds = 0;
+```
+
+If `kWifiSsid` is empty, the firmware stays in offline sensor-only mode.
 
 ## Build and upload
 
 ```bash
-pio run
-pio run -t upload
-pio device monitor -b 115200
+.venv/bin/pio run
+.venv/bin/pio run -t upload
+.venv/bin/pio device monitor -b 115200
 ```
 
 ## Expected display output
@@ -47,6 +60,20 @@ If the sensor read fails:
 ```text
 DHT11 error
 Check wiring
+```
+
+When Wi-Fi and NTP are configured, the display alternates between:
+
+```text
+Temp: 24.0 C
+Hum: 51 %
+```
+
+and:
+
+```text
+12:34:56
+Clock via NTP
 ```
 
 ## Notes

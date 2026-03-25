@@ -12,9 +12,20 @@ constexpr uint8_t kLcdSecondaryAddress = 0x3F;
 constexpr uint8_t kDhtPin = D5;
 constexpr uint8_t kDhtType = DHT11;
 
+constexpr char kWifiSsid[] = "";
+constexpr char kWifiPassword[] = "";
+constexpr char kNtpServer[] = "pool.ntp.org";
+constexpr long kUtcOffsetSeconds = 0;
+
 constexpr unsigned long kSensorReadIntervalMs = 2500;
 constexpr unsigned long kDisplayRefreshIntervalMs = 500;
 constexpr unsigned long kBootScreenMs = 1500;
+constexpr unsigned long kScreenSwitchIntervalMs = 4000;
+constexpr unsigned long kWifiReconnectIntervalMs = 15000;
 constexpr float kInvalidTemperature = -1000.0f;
 constexpr float kInvalidHumidity = -1.0f;
+
+constexpr bool isWifiConfigured() {
+  return kWifiSsid[0] != '\0';
+}
 }  // namespace config
