@@ -12,6 +12,7 @@ class AppController {
 
  private:
   void publishTelemetry();
+  void applyDisplaySettings();
   void updateClock();
   void updateSensor();
   void updateDisplay();

@@ -114,6 +114,10 @@ bool ClockService::isOtaEnabled() const {
   return otaEnabled_;
 }
 
+bool ClockService::isBacklightEnabled() const {
+  return config_.backlightEnabled;
+}
+
 bool ClockService::shouldShowInfoScreen() const {
   return apMode_ || isConfigured();
 }
@@ -283,6 +287,7 @@ void ClockService::handleRoot() {
   html += "</strong></span>";
   html += "<span class='badge'>IP: <strong id='ipBadge'>" + htmlEscape(getIpAddress()) + "</strong></span>";
   html += "<span class='badge'>OTA: <strong id='otaBadge'>" + String(otaEnabled_ ? "включено" : "ожидание") + "</strong></span>";
+  html += "<span class='badge'>Подсветка: <strong id='blBadge'>" + String(config_.backlightEnabled ? "вкл" : "выкл") + "</strong></span>";
   html += "<span class='badge'>JSON: <code>/status</code></span></div></section>";
   html += "<div class='grid'>";
   html += "<section class='card'><h2>Живой статус</h2><div class='stat-grid'>";
@@ -300,6 +305,7 @@ void ClockService::handleRoot() {
   html += "<p><strong>IP:</strong> <span id='ipValue'>" + htmlEscape(getIpAddress()) + "</span></p>";
   html += "<p><strong>RSSI:</strong> <span id='rssiValue'>--</span></p>";
   html += "<p><strong>LCD:</strong> <span id='lcdState'>--</span></p>";
+  html += "<p><strong>Подсветка:</strong> <span id='backlightValue'>--</span></p>";
   html += "<p><strong>Датчик:</strong> <span id='sensorState'>--</span></p>";
   html += "<p><strong>Chip ID:</strong> <span id='chipValue'>--</span></p></div></section>";
   html += "<section class='card'><h2>Настройка сети</h2>";
@@ -310,6 +316,11 @@ void ClockService::handleRoot() {
   html += "<label for='utcHours'>Смещение UTC (часы)</label><input id='utcHours' name='utcHours' type='number' min='-12' max='14' value='";
   html += String(config_.utcOffsetSeconds / 3600);
   html += "'>";
+  html += "<label for='backlightEnabled'>Подсветка LCD</label><input id='backlightEnabled' name='backlightEnabled' type='checkbox'";
+  if (config_.backlightEnabled) {
+    html += " checked";
+  }
+  html += ">";
   html += "<div class='actions'><button type='submit'>Сохранить и перезапустить</button></div></form>";
   html += "<form method='post' action='/reset'><div class='actions'><button class='danger' type='submit'>Очистить конфиг и перезапустить</button></div></form>";
   html += "<p class='muted tiny'>После сохранения устройство автоматически перезапустится и попытается подключиться к заданной сети.</p></section></div>";
@@ -320,6 +331,7 @@ void ClockService::handleRoot() {
   html += "document.getElementById('modeBadge').textContent=s.mode==='ap'?'AP setup':'Station';";
   html += "document.getElementById('ipBadge').textContent=s.ip||'0.0.0.0';";
   html += "document.getElementById('otaBadge').textContent=s.otaEnabled?'включено':'ожидание';";
+  html += "document.getElementById('blBadge').textContent=s.backlightEnabled?'вкл':'выкл';";
   html += "document.getElementById('tempValue').textContent=s.sensorOk?`${num(s.temperatureC,1)} C`:'нет данных';";
   html += "document.getElementById('humValue').textContent=s.sensorOk?`${num(s.humidityPct,0)} %`:'нет данных';";
   html += "document.getElementById('wifiValue').textContent=s.wifiConnected?'подключен':(s.wifiConfigured?'подключение...':'не настроен');";
@@ -332,6 +344,7 @@ void ClockService::handleRoot() {
   html += "document.getElementById('ipValue').textContent=s.ip||'0.0.0.0';";
   html += "document.getElementById('rssiValue').textContent=s.wifiConnected?`${s.rssi} dBm`:'--';";
   html += "document.getElementById('lcdState').textContent=s.lcdOk?`ok (0x${Number(s.lcdAddress).toString(16)})`:'ошибка';";
+  html += "document.getElementById('backlightValue').textContent=s.backlightEnabled?'включена':'выключена';";
   html += "document.getElementById('sensorState').textContent=s.sensorOk?'ok':'ошибка';";
   html += "document.getElementById('chipValue').textContent=s.chipId||'--';";
   html += "}catch(e){console.warn(e);}}refresh();setInterval(refresh,3000);</script>";
@@ -344,6 +357,7 @@ void ClockService::handleSave() {
   next.ssid = g_server.arg("ssid");
   next.password = g_server.arg("password");
   next.utcOffsetSeconds = g_server.arg("utcHours").toInt() * 3600L;
+  next.backlightEnabled = g_server.hasArg("backlightEnabled");
 
   if (!configStore_.save(next)) {
     g_server.send(500, "text/plain", "Failed to save config");
@@ -362,6 +376,7 @@ void ClockService::handleStatus() {
   doc["wifiConnected"] = wifiConnected_;
   doc["timeSynced"] = timeValid_;
   doc["otaEnabled"] = otaEnabled_;
+  doc["backlightEnabled"] = config_.backlightEnabled;
   doc["apMode"] = apMode_;
   doc["lcdOk"] = telemetry_.lcdOk;
   doc["lcdAddress"] = telemetry_.lcdAddress;

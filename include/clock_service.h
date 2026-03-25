@@ -24,6 +24,7 @@ class ClockService {
   bool hasValidTime() const;
   bool isApMode() const;
   bool isOtaEnabled() const;
+  bool isBacklightEnabled() const;
   bool shouldShowInfoScreen() const;
   uint8_t getScreenCount() const;
   String getTimeLine() const;
