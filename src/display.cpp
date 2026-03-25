@@ -78,6 +78,10 @@ void DisplayManager::showSensorError() {
   showLines("DHT11 error", "Check wiring");
 }
 
+void DisplayManager::showClockData(const String& timeLine, const String& statusLine) {
+  showLines(timeLine, statusLine);
+}
+
 bool DisplayManager::i2cDevicePresent(uint8_t address) {
   Wire.beginTransmission(address);
   return Wire.endTransmission() == 0;
