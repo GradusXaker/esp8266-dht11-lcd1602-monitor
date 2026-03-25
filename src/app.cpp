@@ -32,10 +32,12 @@ void AppController::publishTelemetry() {
   DeviceTelemetry telemetry;
   telemetry.lcdOk = state_.lcdOk;
   telemetry.sensorOk = state_.sensorOk;
+  telemetry.sensorHasValidData = state_.sensorHasValidData;
   telemetry.lcdAddress = state_.lcdAddress;
   telemetry.temperatureC = state_.temperatureC;
   telemetry.humidityPct = state_.humidityPct;
   telemetry.uptimeMs = millis();
+  telemetry.sensorAgeMs = state_.sensorHasValidData ? millis() - state_.lastValidSensorMs : 0;
   clock_.setTelemetry(telemetry);
 }
 
@@ -64,13 +66,20 @@ void AppController::updateSensor() {
   state_.lastSensorReadMs = now;
   const SensorReading reading = sensor_.read();
   if (!reading.ok) {
-    state_.sensorOk = false;
+    if (state_.consecutiveSensorFailures < 255) {
+      ++state_.consecutiveSensorFailures;
+    }
+    state_.sensorOk = state_.sensorHasValidData &&
+                      (now - state_.lastValidSensorMs) < config::kSensorStaleAfterMs;
     return;
   }
 
+  state_.consecutiveSensorFailures = 0;
   state_.sensorOk = true;
+  state_.sensorHasValidData = true;
   state_.temperatureC = reading.temperatureC;
   state_.humidityPct = reading.humidityPct;
+  state_.lastValidSensorMs = now;
 }
 
 void AppController::updateDisplay() {
@@ -106,7 +115,7 @@ void AppController::updateDisplay() {
     return;
   }
 
-  if (!state_.sensorOk) {
+  if (!state_.sensorOk && !state_.sensorHasValidData) {
     display_.showSensorError();
     return;
   }

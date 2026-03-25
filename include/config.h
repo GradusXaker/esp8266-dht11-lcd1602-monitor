@@ -21,6 +21,8 @@ constexpr char kConfigPath[] = "/config.json";
 constexpr long kUtcOffsetSeconds = 0;
 
 constexpr unsigned long kSensorReadIntervalMs = 2500;
+constexpr unsigned long kSensorStaleAfterMs = 15000;
+constexpr unsigned long kWifiScanRefreshMs = 30000;
 constexpr unsigned long kDisplayRefreshIntervalMs = 500;
 constexpr unsigned long kBootScreenMs = 1500;
 constexpr unsigned long kScreenSwitchIntervalMs = 4000;
