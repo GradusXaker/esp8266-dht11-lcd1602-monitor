@@ -15,6 +15,9 @@ constexpr uint8_t kDhtType = DHT11;
 constexpr char kWifiSsid[] = "";
 constexpr char kWifiPassword[] = "";
 constexpr char kNtpServer[] = "pool.ntp.org";
+constexpr char kSetupApSsid[] = "ESP8266-Setup";
+constexpr char kOtaHostnamePrefix[] = "esp8266-weather";
+constexpr char kConfigPath[] = "/config.json";
 constexpr long kUtcOffsetSeconds = 0;
 
 constexpr unsigned long kSensorReadIntervalMs = 2500;
@@ -22,6 +25,7 @@ constexpr unsigned long kDisplayRefreshIntervalMs = 500;
 constexpr unsigned long kBootScreenMs = 1500;
 constexpr unsigned long kScreenSwitchIntervalMs = 4000;
 constexpr unsigned long kWifiReconnectIntervalMs = 15000;
+constexpr unsigned long kRestartDelayMs = 1500;
 constexpr float kInvalidTemperature = -1000.0f;
 constexpr float kInvalidHumidity = -1.0f;
 

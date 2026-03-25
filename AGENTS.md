@@ -1,12 +1,12 @@
 # AGENTS.md
 
-This repository contains a PlatformIO firmware project for `NodeMCU 1.0 (ESP-12E Module)` using `ESP8266`, `LCD1602 I2C`, and `DHT11`.
+This repository contains a PlatformIO firmware project for `NodeMCU 1.0 (ESP-12E Module)` using `ESP8266`, `LCD1602 I2C`, `DHT11`, optional `Wi-Fi + NTP`, OTA, and a built-in web setup page.
 
 ## Project Overview
 
-- Goal: display temperature and humidity on a 16x2 I2C LCD.
-- Current scope: minimal working firmware with modular structure.
-- Future scope: Wi-Fi, NTP clock, OTA, and status pages can be added without major rewrites.
+- Goal: display temperature and humidity on a 16x2 I2C LCD and allow optional clock/network features.
+- Current scope: working firmware with modular structure, setup AP, web config, status endpoint, and OTA.
+- Future scope: richer status pages, captive portal improvements, and additional screens can be added without major rewrites.
 - Framework: Arduino via PlatformIO.
 - Primary target: `env:nodemcuv2`.
 
@@ -15,11 +15,16 @@ This repository contains a PlatformIO firmware project for `NodeMCU 1.0 (ESP-12E
 - `platformio.ini` - PlatformIO environment and dependencies.
 - `include/config.h` - pins, timings, and hardware constants.
 - `include/app_state.h` - shared runtime state.
+- `include/app_config.h` - persisted Wi-Fi and timezone configuration.
+- `include/config_store.h` - LittleFS-backed config persistence interface.
 - `include/display.h` - LCD manager interface.
 - `include/sensor.h` - DHT11 manager interface.
+- `include/clock_service.h` - Wi-Fi, NTP, OTA, and web setup interface.
 - `include/app.h` - top-level controller interface.
 - `src/main.cpp` - Arduino entrypoints.
 - `src/app.cpp` - app orchestration and timing.
+- `src/config_store.cpp` - JSON config load/save via LittleFS.
+- `src/clock_service.cpp` - Wi-Fi mode, NTP sync, OTA, and web handlers.
 - `src/display.cpp` - LCD detection and rendering.
 - `src/sensor.cpp` - DHT11 reads and serial logging.
 - `README.md` - wiring and usage notes.
@@ -70,6 +75,12 @@ python3 -m venv .venv
 .venv/bin/pio run -t clean
 ```
 
+- Clean and rebuild when dependencies or FS-related code changes significantly:
+
+```bash
+.venv/bin/pio run -t clean && .venv/bin/pio run
+```
+
 - Upload firmware to board:
 
 ```bash
@@ -117,6 +128,10 @@ python3 -m venv .venv
 - Boot text appears on screen.
 - DHT11 values appear in serial logs.
 - Display updates with temperature and humidity.
+- If Wi-Fi is not configured, the device starts AP mode `ESP8266-Setup`.
+- `http://192.168.4.1` opens the setup page in AP mode.
+- `/status` returns JSON status in both AP and STA modes.
+- OTA becomes available after Wi-Fi connects successfully.
 - If the sensor is disconnected, the LCD shows an error state.
 
 ## Code Style
@@ -165,14 +180,18 @@ python3 -m venv .venv
 - Fail soft: continue running and log errors over serial when possible.
 - For sensor reads, always handle `NaN` explicitly.
 - For I2C display setup, try known addresses before a scan.
+- For filesystem-backed config, handle mount/load/save failures explicitly and keep running in a safe fallback mode.
+- For Wi-Fi setup, prefer AP fallback over a dead-end boot state.
 - Show short human-readable error messages on the LCD.
 - Prefer returning status objects or booleans over hidden global failure states.
 
 ## State Management
 
 - Keep runtime state centralized in `AppState` or similarly clear structures.
+- Keep persisted credentials and timezone data in `AppConfig`, not in unrelated controllers.
 - Separate hardware access from orchestration logic.
 - Do not mix display formatting with low-level sensor reads.
+- Keep network, OTA, web, and NTP concerns inside `ClockService` or adjacent modules.
 - Throttle sensor polling and LCD refresh independently.
 - Preserve the last valid values unless there is a strong reason to clear them.
 
@@ -183,11 +202,14 @@ python3 -m venv .venv
 - Use `millis()` scheduling instead of long `delay()` calls.
 - Be careful with boot-sensitive ESP8266 pins.
 - Keep RAM and flash usage visible after meaningful changes.
+- Be conservative with heap churn from `String`, HTML generation, and JSON documents.
+- Prefer AP fallback plus web setup over hardcoding secrets into the repository.
 
 ## Logging
 
 - Use `Serial` at `115200`.
 - Log startup state, LCD detection result, and sensor read failures.
+- Log Wi-Fi mode transitions, config persistence failures, OTA start/end, and NTP sync.
 - Keep log messages short and grep-friendly, e.g. `[LCD]`, `[DHT]`, `[APP]`.
 - Do not spam serial output faster than the sensor refresh cadence.
 
@@ -205,7 +227,7 @@ python3 -m venv .venv
 - Build the firmware after non-trivial code changes.
 - Report exact commands used for build and verification.
 - If hardware behavior is uncertain, preserve current wiring assumptions in `README.md` and this file.
-- If introducing Wi-Fi, OTA, or storage, update this file with the new commands and constraints.
+- If introducing Wi-Fi, OTA, storage, or web setup, update this file with the new commands and constraints.
 
 ## Cursor / Copilot Rules
 

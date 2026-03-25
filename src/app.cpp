@@ -6,11 +6,11 @@
 
 void AppController::begin() {
   state_.bootAtMs = millis();
-  state_.wifiConfigured = config::isWifiConfigured();
   state_.lcdOk = display_.begin();
   state_.lcdAddress = display_.getAddress();
 
   clock_.begin();
+  updateClock();
   sensor_.begin();
   printStartupInfo();
 
@@ -30,6 +30,8 @@ void AppController::updateClock() {
   state_.wifiConfigured = clock_.isConfigured();
   state_.wifiConnected = clock_.isWifiConnected();
   state_.timeSynced = clock_.hasValidTime();
+  state_.apMode = clock_.isApMode();
+  state_.otaEnabled = clock_.isOtaEnabled();
 }
 
 void AppController::updateSensor() {
@@ -67,7 +69,7 @@ void AppController::updateDisplay() {
   }
   state_.showBootScreen = false;
 
-  if (state_.wifiConfigured && now - state_.lastScreenSwitchMs >= config::kScreenSwitchIntervalMs) {
+  if (clock_.shouldShowInfoScreen() && now - state_.lastScreenSwitchMs >= config::kScreenSwitchIntervalMs) {
     state_.lastScreenSwitchMs = now;
     state_.showClockScreen = !state_.showClockScreen;
   }
@@ -94,8 +96,10 @@ void AppController::printStartupInfo() const {
   }
   Serial.printf("[APP] Sensor pin: D5 / GPIO %u\n", config::kDhtPin);
   Serial.printf("[APP] Wi-Fi configured: %s\n", state_.wifiConfigured ? "yes" : "no");
+  Serial.printf("[APP] AP mode: %s\n", state_.apMode ? "yes" : "no");
+  Serial.printf("[APP] Hostname: %s\n", clock_.getHostname().c_str());
   if (state_.wifiConfigured) {
     Serial.printf("[APP] NTP server: %s\n", config::kNtpServer);
   }
-  Serial.println("[APP] Future-ready structure: Wi-Fi/NTP/OTA can be added later");
+  Serial.println("[APP] OTA and web setup are available when network starts");
 }

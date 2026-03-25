@@ -10,6 +10,8 @@ struct AppState {
   bool wifiConfigured = false;
   bool wifiConnected = false;
   bool timeSynced = false;
+  bool apMode = false;
+  bool otaEnabled = false;
   uint8_t lcdAddress = 0;
   float temperatureC = NAN;
   float humidityPct = NAN;
