@@ -8,10 +8,12 @@
 struct DeviceTelemetry {
   bool lcdOk = false;
   bool sensorOk = false;
+  bool sensorHasValidData = false;
   uint8_t lcdAddress = 0;
   float temperatureC = NAN;
   float humidityPct = NAN;
   unsigned long uptimeMs = 0;
+  unsigned long sensorAgeMs = 0;
 };
 
 class ClockService {
@@ -35,6 +37,7 @@ class ClockService {
   String getHostname() const;
   long getUtcOffsetSeconds() const;
   int getRssi() const;
+  String getSensorLine() const;
 
  private:
   void startAccessPoint();
@@ -46,6 +49,7 @@ class ClockService {
   void handleStatus();
   void handleReset();
   void scheduleRestart();
+  void refreshWifiScan(bool force = false);
   String htmlEscape(const String& value) const;
 
   AppConfig config_;
@@ -58,7 +62,9 @@ class ClockService {
   bool webStarted_ = false;
   bool restartScheduled_ = false;
   unsigned long lastReconnectAttemptMs_ = 0;
+  unsigned long lastWifiScanMs_ = 0;
   unsigned long restartAtMs_ = 0;
   String hostname_;
+  String wifiOptionsHtml_;
   DeviceTelemetry telemetry_;
 };

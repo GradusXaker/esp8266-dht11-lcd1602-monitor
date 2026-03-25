@@ -29,6 +29,7 @@ void ClockService::begin() {
            static_cast<unsigned long>(chipId));
   hostname_ = hostname;
 
+  refreshWifiScan(true);
   setupWebServer();
   if (config_.isWifiConfigured()) {
     startStation();
@@ -53,6 +54,7 @@ void ClockService::update() {
   }
 
   if (apMode_) {
+    refreshWifiScan();
     wifiConnected_ = false;
     timeValid_ = false;
     return;
@@ -61,6 +63,7 @@ void ClockService::update() {
   const wl_status_t status = WiFi.status();
   wifiConnected_ = status == WL_CONNECTED;
   if (!wifiConnected_) {
+    refreshWifiScan();
     timeValid_ = false;
     otaEnabled_ = false;
     if (millis() - lastReconnectAttemptMs_ >= config::kWifiReconnectIntervalMs) {
@@ -218,6 +221,17 @@ int ClockService::getRssi() const {
   return WiFi.RSSI();
 }
 
+String ClockService::getSensorLine() const {
+  if (!telemetry_.sensorHasValidData) {
+    return "Sensor offline";
+  }
+
+  String line = telemetry_.sensorOk ? "Sensor ok " : "Sensor stale ";
+  line += String(telemetry_.sensorAgeMs / 1000);
+  line += "s";
+  return line;
+}
+
 void ClockService::startAccessPoint() {
   WiFi.mode(WIFI_AP);
   WiFi.softAP(config::kSetupApSsid);
@@ -265,6 +279,7 @@ void ClockService::setupOta() {
 }
 
 void ClockService::handleRoot() {
+  refreshWifiScan();
   String html;
   html.reserve(7000);
   html += "<!doctype html><html><head><meta charset='utf-8'>";
@@ -297,6 +312,7 @@ void ClockService::handleRoot() {
   html += "<div class='stat'><span class='label'>Время</span><span class='value' id='timeValue'>--:--:--</span></div>";
   html += "<div class='stat'><span class='label'>Свободная память</span><span class='value' id='heapValue'>--</span></div>";
   html += "<div class='stat'><span class='label'>Uptime</span><span class='value' id='uptimeValue'>--</span></div>";
+  html += "<div class='stat'><span class='label'>Сенсор</span><span class='value' id='sensorInfoValue'>--</span></div>";
   html += "</div></section>";
   html += "<div class='split' style='grid-column:span 12'>";
   html += "<section class='card'><h2>LCD и устройство</h2><div class='display'>";
@@ -307,11 +323,15 @@ void ClockService::handleRoot() {
   html += "<p><strong>LCD:</strong> <span id='lcdState'>--</span></p>";
   html += "<p><strong>Подсветка:</strong> <span id='backlightValue'>--</span></p>";
   html += "<p><strong>Датчик:</strong> <span id='sensorState'>--</span></p>";
+  html += "<p><strong>Возраст данных:</strong> <span id='sensorAgeValue'>--</span></p>";
   html += "<p><strong>Chip ID:</strong> <span id='chipValue'>--</span></p></div></section>";
   html += "<section class='card'><h2>Настройка сети</h2>";
   html += "<p class='muted'>Сохраненные настройки имеют приоритет. Если конфигурации нет, устройство само поднимает <code>ESP8266-Setup</code>.</p>";
   html += "<form method='post' action='/save'>";
   html += "<label for='ssid'>Wi-Fi SSID</label><input id='ssid' name='ssid' value='" + htmlEscape(config_.ssid) + "'>";
+  html += "<div class='muted tiny'>Найденные сети: ";
+  html += wifiOptionsHtml_.length() > 0 ? wifiOptionsHtml_ : "сканирование...";
+  html += "</div>";
   html += "<label for='password'>Пароль Wi-Fi</label><input id='password' name='password' type='password' value='" + htmlEscape(config_.password) + "'>";
   html += "<label for='utcHours'>Смещение UTC (часы)</label><input id='utcHours' name='utcHours' type='number' min='-12' max='14' value='";
   html += String(config_.utcOffsetSeconds / 3600);
@@ -338,6 +358,7 @@ void ClockService::handleRoot() {
   html += "document.getElementById('timeValue').textContent=s.timeLine||'--:--:--';";
   html += "document.getElementById('heapValue').textContent=s.freeHeap?`${s.freeHeap} B`:'--';";
   html += "document.getElementById('uptimeValue').textContent=fmtMs(s.uptimeMs||0);";
+  html += "document.getElementById('sensorInfoValue').textContent=s.sensorLine||'--';";
   html += "document.getElementById('lcdLine1').textContent=s.dateLine||s.timeLine||'--';";
   html += "document.getElementById('lcdLine2').textContent=s.networkLine||s.statusLine||'--';";
   html += "document.getElementById('hostnameValue').textContent=s.hostname||'--';";
@@ -345,7 +366,8 @@ void ClockService::handleRoot() {
   html += "document.getElementById('rssiValue').textContent=s.wifiConnected?`${s.rssi} dBm`:'--';";
   html += "document.getElementById('lcdState').textContent=s.lcdOk?`ok (0x${Number(s.lcdAddress).toString(16)})`:'ошибка';";
   html += "document.getElementById('backlightValue').textContent=s.backlightEnabled?'включена':'выключена';";
-  html += "document.getElementById('sensorState').textContent=s.sensorOk?'ok':'ошибка';";
+  html += "document.getElementById('sensorState').textContent=s.sensorHasValidData?(s.sensorOk?'ok':'устарели'):'ошибка';";
+  html += "document.getElementById('sensorAgeValue').textContent=s.sensorHasValidData?fmtMs(s.sensorAgeMs||0):'--';";
   html += "document.getElementById('chipValue').textContent=s.chipId||'--';";
   html += "}catch(e){console.warn(e);}}refresh();setInterval(refresh,3000);</script>";
   html += "</main></body></html>";
@@ -381,8 +403,11 @@ void ClockService::handleStatus() {
   doc["lcdOk"] = telemetry_.lcdOk;
   doc["lcdAddress"] = telemetry_.lcdAddress;
   doc["sensorOk"] = telemetry_.sensorOk;
+  doc["sensorHasValidData"] = telemetry_.sensorHasValidData;
   doc["temperatureC"] = telemetry_.temperatureC;
   doc["humidityPct"] = telemetry_.humidityPct;
+  doc["sensorAgeMs"] = telemetry_.sensorAgeMs;
+  doc["sensorLine"] = getSensorLine();
   doc["ip"] = getIpAddress();
   doc["hostname"] = hostname_;
   doc["ssid"] = config_.ssid;
@@ -410,6 +435,31 @@ void ClockService::handleReset() {
 void ClockService::scheduleRestart() {
   restartScheduled_ = true;
   restartAtMs_ = millis() + config::kRestartDelayMs;
+}
+
+void ClockService::refreshWifiScan(bool force) {
+  const unsigned long now = millis();
+  if (!force && (now - lastWifiScanMs_) < config::kWifiScanRefreshMs) {
+    return;
+  }
+  lastWifiScanMs_ = now;
+
+  const int networks = WiFi.scanNetworks();
+  if (networks <= 0) {
+    wifiOptionsHtml_ = "сети не найдены";
+    return;
+  }
+
+  String options;
+  options.reserve(networks * 24);
+  const int count = networks > 8 ? 8 : networks;
+  for (int i = 0; i < count; ++i) {
+    if (i > 0) {
+      options += ", ";
+    }
+    options += htmlEscape(WiFi.SSID(i));
+  }
+  wifiOptionsHtml_ = options;
 }
 
 String ClockService::htmlEscape(const String& value) const {
