@@ -11,6 +11,7 @@ class AppController {
   void loop();
 
  private:
+  void publishTelemetry();
   void updateClock();
   void updateSensor();
   void updateDisplay();

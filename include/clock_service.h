@@ -5,10 +5,20 @@
 #include "app_config.h"
 #include "config_store.h"
 
+struct DeviceTelemetry {
+  bool lcdOk = false;
+  bool sensorOk = false;
+  uint8_t lcdAddress = 0;
+  float temperatureC = NAN;
+  float humidityPct = NAN;
+  unsigned long uptimeMs = 0;
+};
+
 class ClockService {
  public:
   void begin();
   void update();
+  void setTelemetry(const DeviceTelemetry& telemetry);
   bool isConfigured() const;
   bool isWifiConnected() const;
   bool hasValidTime() const;
@@ -49,4 +59,5 @@ class ClockService {
   unsigned long lastReconnectAttemptMs_ = 0;
   unsigned long restartAtMs_ = 0;
   String hostname_;
+  DeviceTelemetry telemetry_;
 };

@@ -1,40 +1,42 @@
 # ESP8266 LCD1602 DHT11 Monitor
 
-Simple firmware project for `NodeMCU 1.0 (ESP-12E Module)` with `LCD1602 I2C`, `DHT11`, optional `Wi-Fi + NTP`, OTA, and web setup.
+Проект прошивки для `NodeMCU 1.0 (ESP-12E Module)` с `LCD1602 I2C`, `DHT11`, опциональными `Wi-Fi + NTP`, OTA и встроенной web-настройкой.
 
-## Wiring
+## Подключение
 
 - `LCD SDA` -> `D2 / GPIO4`
 - `LCD SCL` -> `D1 / GPIO5`
 - `LCD VCC` -> `3.3V`
 - `LCD GND` -> `GND`
 - `DHT11 S` -> `D5 / GPIO14`
-- `DHT11 middle pin` -> `3.3V`
+- `DHT11 средний пин` -> `3.3V`
 - `DHT11 -` -> `GND`
 
-## Features
+## Возможности
 
-- Auto-detects LCD I2C address (`0x27`, `0x3F`, then full scan)
-- Reads `DHT11` every 2.5 seconds
-- Shows temperature and humidity on a 16x2 display
-- Supports optional `Wi-Fi + NTP` clock screen when credentials are configured
-- Starts an AP setup portal when Wi-Fi is not configured
-- Exposes a web UI at `/` and JSON status at `/status`
-- Enables Arduino OTA after joining Wi-Fi
-- Rotates multiple LCD screens for sensor, time, and network info
-- Prints diagnostics to `Serial` at `115200`
-- Keeps code structure ready for future `Wi-Fi`, `NTP`, and `OTA`
+- автоопределение адреса I2C-дисплея (`0x27`, `0x3F`, затем полный scan)
+- чтение `DHT11` каждые 2.5 секунды
+- показ температуры и влажности на `LCD1602`
+- точка доступа настройки `ESP8266-Setup`, если Wi-Fi еще не сохранен
+- web-интерфейс на `/` и JSON-статус на `/status`
+- автоматическое включение Arduino OTA после подключения к Wi-Fi
+- ротация экранов LCD: датчик, время/статус, дата/сеть
+- диагностические сообщения в `Serial` на `115200`
 
-## First boot and setup mode
+## Первый запуск и режим настройки
 
-- If no Wi-Fi is saved, the device starts AP mode: `ESP8266-Setup`
-- Connect to it and open `http://192.168.4.1`
-- Save Wi-Fi SSID, password, and UTC offset
-- The device restarts and joins your network
+Если Wi-Fi не настроен:
 
-## Optional default Wi-Fi values
+- устройство поднимет точку доступа `ESP8266-Setup`
+- подключитесь к ней с телефона или ноутбука
+- откройте `http://192.168.4.1`
+- введите SSID, пароль и смещение UTC
+- сохраните настройки
+- устройство перезагрузится и подключится к вашей сети
 
-You can also prefill defaults in `include/config.h`:
+## Опциональные значения по умолчанию
+
+Можно заранее прописать значения в `include/config.h`:
 
 ```cpp
 constexpr char kWifiSsid[] = "YOUR_WIFI";
@@ -42,9 +44,9 @@ constexpr char kWifiPassword[] = "YOUR_PASSWORD";
 constexpr long kUtcOffsetSeconds = 0;
 ```
 
-Saved config from the web UI takes priority over compile-time defaults.
+Сохраненная через web-интерфейс конфигурация имеет приоритет над compile-time значениями.
 
-## Build and upload
+## Сборка и прошивка
 
 ```bash
 .venv/bin/pio run
@@ -52,49 +54,37 @@ Saved config from the web UI takes priority over compile-time defaults.
 .venv/bin/pio device monitor -b 115200
 ```
 
-## Expected display output
+## Что показывает экран
 
-Line 1:
-
-```text
-Temp: 24.0 C
-```
-
-Line 2:
-
-```text
-Hum: 51 %
-```
-
-If the sensor read fails:
-
-```text
-DHT11 error
-Check wiring
-```
-
-When Wi-Fi and NTP are configured, the display alternates between:
+Основной экран:
 
 ```text
 Temp: 24.0 C
 Hum: 51 %
 ```
 
-and:
+Экран часов:
 
 ```text
 12:34:56
-Clock via NTP
+Clock+OTA ready
 ```
 
-and:
+Экран сети/даты:
 
 ```text
 25.03.2026
 IP 192.168.1.15
 ```
 
-When the device is waiting for setup, the display alternates between the sensor screen and:
+Если датчик не отвечает:
+
+```text
+DHT11 error
+Check wiring
+```
+
+Если устройство ждет первичную настройку:
 
 ```text
 Setup AP mode
@@ -103,17 +93,18 @@ Setup AP mode
 
 ## Web endpoints
 
-- `/` - setup page for Wi-Fi and UTC offset
-- `/status` - JSON status with IP, mode, OTA state, RSSI, uptime, heap, and LCD lines
+- `/` - страница настройки Wi-Fi и UTC offset
+- `/status` - JSON-статус устройства с сетью, OTA, памятью и runtime-полями
+- `/reset` - очистка сохраненной конфигурации через POST
 
-## OTA update
+## OTA-обновление
 
-- After the device joins Wi-Fi, Arduino OTA is enabled automatically
-- OTA hostname format: `esp8266-weather-<chipid>`
-- Upload from Arduino IDE or another OTA-capable workflow on the same LAN
+- после подключения к Wi-Fi OTA включается автоматически
+- hostname имеет вид `esp8266-weather-<chipid>`
+- устройство и компьютер должны быть в одной локальной сети
 
-## Notes
+## Примечания
 
-- The contrast trimmer on most I2C backpacks changes text contrast, not backlight brightness.
-- If the backlight is too bright, that usually needs a hardware fix on the backpack.
-- Do not use `GPIO0` (`IO0`) for the sensor or LCD in this project.
+- потенциометр на большинстве I2C-backpack регулирует контраст символов, а не яркость подсветки
+- если подсветка слишком яркая, это обычно решается аппаратно на самом backpack
+- не используйте `GPIO0` (`IO0`) для логики датчика или дисплея
