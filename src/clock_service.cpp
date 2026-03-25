@@ -6,6 +6,7 @@
 #include <ESP8266WiFi.h>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
+#include <time.h>
 
 #include "config.h"
 
@@ -113,6 +114,16 @@ bool ClockService::shouldShowInfoScreen() const {
   return apMode_ || isConfigured();
 }
 
+uint8_t ClockService::getScreenCount() const {
+  if (apMode_) {
+    return 2;
+  }
+  if (isConfigured()) {
+    return 3;
+  }
+  return 1;
+}
+
 String ClockService::getTimeLine() const {
   if (apMode_) {
     return "Setup AP mode";
@@ -121,6 +132,28 @@ String ClockService::getTimeLine() const {
     return "Time not ready";
   }
   return g_timeClient.getFormattedTime();
+}
+
+String ClockService::getDateLine() const {
+  if (apMode_) {
+    return "Open 192.168.4.1";
+  }
+  if (!timeValid_) {
+    return getStatusLine();
+  }
+
+  const time_t epoch = static_cast<time_t>(g_timeClient.getEpochTime());
+  const struct tm* tmInfo = gmtime(&epoch);
+  if (!tmInfo) {
+    return "Date not ready";
+  }
+
+  char buffer[17];
+  const unsigned int day = static_cast<unsigned int>(tmInfo->tm_mday);
+  const unsigned int month = static_cast<unsigned int>(tmInfo->tm_mon + 1);
+  const unsigned int year = static_cast<unsigned int>(tmInfo->tm_year + 1900);
+  snprintf(buffer, sizeof(buffer), "%02u.%02u.%04u", day, month, year);
+  return String(buffer);
 }
 
 String ClockService::getStatusLine() const {
@@ -149,8 +182,32 @@ String ClockService::getIpAddress() const {
   return "0.0.0.0";
 }
 
+String ClockService::getNetworkLine() const {
+  if (apMode_) {
+    return config::kSetupApSsid;
+  }
+  if (!wifiConnected_) {
+    return "IP 0.0.0.0";
+  }
+
+  String line = "IP ";
+  line += WiFi.localIP().toString();
+  return line;
+}
+
 String ClockService::getHostname() const {
   return hostname_;
+}
+
+long ClockService::getUtcOffsetSeconds() const {
+  return config_.utcOffsetSeconds;
+}
+
+int ClockService::getRssi() const {
+  if (!wifiConnected_) {
+    return 0;
+  }
+  return WiFi.RSSI();
 }
 
 void ClockService::startAccessPoint() {
@@ -255,11 +312,20 @@ void ClockService::handleStatus() {
   doc["wifiConnected"] = wifiConnected_;
   doc["timeSynced"] = timeValid_;
   doc["otaEnabled"] = otaEnabled_;
+  doc["apMode"] = apMode_;
   doc["ip"] = getIpAddress();
   doc["hostname"] = hostname_;
   doc["ssid"] = config_.ssid;
   doc["utcOffsetSeconds"] = config_.utcOffsetSeconds;
+  doc["rssi"] = getRssi();
+  doc["screenCount"] = getScreenCount();
+  doc["timeLine"] = getTimeLine();
+  doc["dateLine"] = getDateLine();
+  doc["networkLine"] = getNetworkLine();
   doc["statusLine"] = getStatusLine();
+  doc["chipId"] = ESP.getChipId();
+  doc["freeHeap"] = ESP.getFreeHeap();
+  doc["uptimeMs"] = millis();
   String json;
   serializeJson(doc, json);
   g_server.send(200, "application/json", json);

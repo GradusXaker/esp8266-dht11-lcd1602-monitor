@@ -15,10 +15,15 @@ class ClockService {
   bool isApMode() const;
   bool isOtaEnabled() const;
   bool shouldShowInfoScreen() const;
+  uint8_t getScreenCount() const;
   String getTimeLine() const;
+  String getDateLine() const;
   String getStatusLine() const;
+  String getNetworkLine() const;
   String getIpAddress() const;
   String getHostname() const;
+  long getUtcOffsetSeconds() const;
+  int getRssi() const;
 
  private:
   void startAccessPoint();

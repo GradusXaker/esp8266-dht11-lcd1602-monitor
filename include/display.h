@@ -12,6 +12,7 @@ class DisplayManager {
   void showSensorData(float temperatureC, float humidityPct);
   void showSensorError();
   void showClockData(const String& timeLine, const String& statusLine);
+  void showStatusData(const String& line1, const String& line2);
 
  private:
   bool i2cDevicePresent(uint8_t address);
