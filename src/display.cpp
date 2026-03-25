@@ -39,22 +39,27 @@ void DisplayManager::showLines(const String& line1, const String& line2) {
 
   const String fittedLine1 = fitLine(line1);
   const String fittedLine2 = fitLine(line2);
-  if (fittedLine1 == lastLine1_ && fittedLine2 == lastLine2_) {
+  const bool line1Changed = fittedLine1 != lastLine1_;
+  const bool line2Changed = fittedLine2 != lastLine2_;
+  if (!line1Changed && !line2Changed) {
     return;
   }
 
-  g_lcd->clear();
-  g_lcd->setCursor(0, 0);
-  g_lcd->print(fittedLine1);
-  g_lcd->setCursor(0, 1);
-  g_lcd->print(fittedLine2);
+  if (line1Changed) {
+    writeLine(0, fittedLine1);
+  }
+  if (line2Changed) {
+    writeLine(1, fittedLine2);
+  }
 
   lastLine1_ = fittedLine1;
   lastLine2_ = fittedLine2;
 }
 
-void DisplayManager::showBootScreen() {
-  showLines("ESP8266 Ready", "Init sensors...");
+void DisplayManager::showBootScreen(uint8_t lcdAddress) {
+  char addressLine[17];
+  snprintf(addressLine, sizeof(addressLine), "LCD 0x%02X ready", lcdAddress);
+  showLines("ESP8266 Boot", String(addressLine));
 }
 
 void DisplayManager::showSensorData(float temperatureC, float humidityPct) {
@@ -104,4 +109,9 @@ String DisplayManager::fitLine(const String& line) const {
     result += ' ';
   }
   return result;
+}
+
+void DisplayManager::writeLine(uint8_t row, const String& line) {
+  g_lcd->setCursor(0, row);
+  g_lcd->print(line);
 }

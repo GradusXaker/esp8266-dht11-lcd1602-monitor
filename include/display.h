@@ -8,7 +8,7 @@ class DisplayManager {
   bool isReady() const;
   uint8_t getAddress() const;
   void showLines(const String& line1, const String& line2);
-  void showBootScreen();
+  void showBootScreen(uint8_t lcdAddress);
   void showSensorData(float temperatureC, float humidityPct);
   void showSensorError();
 
@@ -16,6 +16,7 @@ class DisplayManager {
   bool i2cDevicePresent(uint8_t address);
   uint8_t detectAddress();
   String fitLine(const String& line) const;
+  void writeLine(uint8_t row, const String& line);
 
   uint8_t address_ = 0;
   String lastLine1_;
