@@ -13,7 +13,7 @@ void AppController::begin() {
   printStartupInfo();
 
   if (state_.lcdOk) {
-    display_.showBootScreen();
+    display_.showBootScreen(state_.lcdAddress);
   }
 }
 
@@ -52,7 +52,7 @@ void AppController::updateDisplay() {
   state_.lastDisplayRefreshMs = now;
 
   if (state_.showBootScreen && now - state_.bootAtMs < config::kBootScreenMs) {
-    display_.showBootScreen();
+    display_.showBootScreen(state_.lcdAddress);
     return;
   }
   state_.showBootScreen = false;
