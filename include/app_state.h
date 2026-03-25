@@ -6,13 +6,13 @@ struct AppState {
   bool lcdOk = false;
   bool sensorOk = false;
   bool showBootScreen = true;
-  bool showClockScreen = false;
   bool wifiConfigured = false;
   bool wifiConnected = false;
   bool timeSynced = false;
   bool apMode = false;
   bool otaEnabled = false;
   uint8_t lcdAddress = 0;
+  uint8_t currentScreenIndex = 0;
   float temperatureC = NAN;
   float humidityPct = NAN;
   unsigned long bootAtMs = 0;

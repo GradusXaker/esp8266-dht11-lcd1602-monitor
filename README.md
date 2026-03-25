@@ -21,6 +21,7 @@ Simple firmware project for `NodeMCU 1.0 (ESP-12E Module)` with `LCD1602 I2C`, `
 - Starts an AP setup portal when Wi-Fi is not configured
 - Exposes a web UI at `/` and JSON status at `/status`
 - Enables Arduino OTA after joining Wi-Fi
+- Rotates multiple LCD screens for sensor, time, and network info
 - Prints diagnostics to `Serial` at `115200`
 - Keeps code structure ready for future `Wi-Fi`, `NTP`, and `OTA`
 
@@ -86,6 +87,13 @@ and:
 Clock via NTP
 ```
 
+and:
+
+```text
+25.03.2026
+IP 192.168.1.15
+```
+
 When the device is waiting for setup, the display alternates between the sensor screen and:
 
 ```text
@@ -96,7 +104,7 @@ Setup AP mode
 ## Web endpoints
 
 - `/` - setup page for Wi-Fi and UTC offset
-- `/status` - JSON status with IP, mode, OTA state, and time sync state
+- `/status` - JSON status with IP, mode, OTA state, RSSI, uptime, heap, and LCD lines
 
 ## OTA update
 

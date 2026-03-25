@@ -82,6 +82,10 @@ void DisplayManager::showClockData(const String& timeLine, const String& statusL
   showLines(timeLine, statusLine);
 }
 
+void DisplayManager::showStatusData(const String& line1, const String& line2) {
+  showLines(line1, line2);
+}
+
 bool DisplayManager::i2cDevicePresent(uint8_t address) {
   Wire.beginTransmission(address);
   return Wire.endTransmission() == 0;

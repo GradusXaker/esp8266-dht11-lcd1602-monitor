@@ -69,13 +69,19 @@ void AppController::updateDisplay() {
   }
   state_.showBootScreen = false;
 
-  if (clock_.shouldShowInfoScreen() && now - state_.lastScreenSwitchMs >= config::kScreenSwitchIntervalMs) {
+  const uint8_t screenCount = clock_.getScreenCount();
+  if (screenCount > 1 && now - state_.lastScreenSwitchMs >= config::kScreenSwitchIntervalMs) {
     state_.lastScreenSwitchMs = now;
-    state_.showClockScreen = !state_.showClockScreen;
+    state_.currentScreenIndex = (state_.currentScreenIndex + 1) % screenCount;
   }
 
-  if (state_.showClockScreen) {
+  if (state_.currentScreenIndex == 1) {
     display_.showClockData(clock_.getTimeLine(), clock_.getStatusLine());
+    return;
+  }
+
+  if (state_.currentScreenIndex == 2) {
+    display_.showStatusData(clock_.getDateLine(), clock_.getNetworkLine());
     return;
   }
 

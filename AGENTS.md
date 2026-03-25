@@ -4,8 +4,8 @@ This repository contains a PlatformIO firmware project for `NodeMCU 1.0 (ESP-12E
 
 ## Project Overview
 
-- Goal: display temperature and humidity on a 16x2 I2C LCD and allow optional clock/network features.
-- Current scope: working firmware with modular structure, setup AP, web config, status endpoint, and OTA.
+- Goal: display temperature and humidity on a 16x2 I2C LCD and allow optional clock/network/status features.
+- Current scope: working firmware with modular structure, setup AP, web config, multi-screen LCD UX, status endpoint, and OTA.
 - Future scope: richer status pages, captive portal improvements, and additional screens can be added without major rewrites.
 - Framework: Arduino via PlatformIO.
 - Primary target: `env:nodemcuv2`.
@@ -131,6 +131,7 @@ python3 -m venv .venv
 - If Wi-Fi is not configured, the device starts AP mode `ESP8266-Setup`.
 - `http://192.168.4.1` opens the setup page in AP mode.
 - `/status` returns JSON status in both AP and STA modes.
+- LCD rotates through sensor, time, and network/status screens when available.
 - OTA becomes available after Wi-Fi connects successfully.
 - If the sensor is disconnected, the LCD shows an error state.
 
