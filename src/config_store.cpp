@@ -37,6 +37,7 @@ bool ConfigStore::load(AppConfig& config) {
   config.ssid = doc["ssid"] | "";
   config.password = doc["password"] | "";
   config.utcOffsetSeconds = doc["utcOffsetSeconds"] | config::kUtcOffsetSeconds;
+  config.backlightEnabled = doc["backlightEnabled"].is<bool>() ? static_cast<bool>(doc["backlightEnabled"]) : true;
   Serial.printf("[CFG] Loaded config, SSID set: %s\n", config.isWifiConfigured() ? "yes" : "no");
   return true;
 }
@@ -52,6 +53,7 @@ bool ConfigStore::save(const AppConfig& config) {
   doc["ssid"] = config.ssid;
   doc["password"] = config.password;
   doc["utcOffsetSeconds"] = config.utcOffsetSeconds;
+  doc["backlightEnabled"] = config.backlightEnabled;
 
   if (serializeJson(doc, file) == 0) {
     file.close();

@@ -12,6 +12,7 @@ void AppController::begin() {
   clock_.begin();
   updateClock();
   sensor_.begin();
+  applyDisplaySettings();
   printStartupInfo();
 
   if (state_.lcdOk) {
@@ -23,6 +24,7 @@ void AppController::loop() {
   updateClock();
   updateSensor();
   publishTelemetry();
+  applyDisplaySettings();
   updateDisplay();
 }
 
@@ -35,6 +37,13 @@ void AppController::publishTelemetry() {
   telemetry.humidityPct = state_.humidityPct;
   telemetry.uptimeMs = millis();
   clock_.setTelemetry(telemetry);
+}
+
+void AppController::applyDisplaySettings() {
+  if (!state_.lcdOk) {
+    return;
+  }
+  display_.setBacklight(clock_.isBacklightEnabled());
 }
 
 void AppController::updateClock() {

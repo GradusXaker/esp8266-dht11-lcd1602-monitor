@@ -7,6 +7,8 @@ class DisplayManager {
   bool begin();
   bool isReady() const;
   uint8_t getAddress() const;
+  void setBacklight(bool enabled);
+  bool isBacklightEnabled() const;
   void showLines(const String& line1, const String& line2);
   void showBootScreen(uint8_t lcdAddress);
   void showSensorData(float temperatureC, float humidityPct);
@@ -21,6 +23,7 @@ class DisplayManager {
   void writeLine(uint8_t row, const String& line);
 
   uint8_t address_ = 0;
+  bool backlightEnabled_ = true;
   String lastLine1_;
   String lastLine2_;
 };

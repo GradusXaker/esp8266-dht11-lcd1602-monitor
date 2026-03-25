@@ -20,6 +20,7 @@ bool DisplayManager::begin() {
   g_lcd = new LiquidCrystal_I2C(address_, config::kLcdCols, config::kLcdRows);
   g_lcd->init();
   g_lcd->backlight();
+  backlightEnabled_ = true;
   Serial.printf("[LCD] Ready at 0x%02X\n", address_);
   return true;
 }
@@ -30,6 +31,28 @@ bool DisplayManager::isReady() const {
 
 uint8_t DisplayManager::getAddress() const {
   return address_;
+}
+
+void DisplayManager::setBacklight(bool enabled) {
+  if (!g_lcd) {
+    backlightEnabled_ = enabled;
+    return;
+  }
+
+  if (enabled == backlightEnabled_) {
+    return;
+  }
+
+  backlightEnabled_ = enabled;
+  if (enabled) {
+    g_lcd->backlight();
+  } else {
+    g_lcd->noBacklight();
+  }
+}
+
+bool DisplayManager::isBacklightEnabled() const {
+  return backlightEnabled_;
 }
 
 void DisplayManager::showLines(const String& line1, const String& line2) {
